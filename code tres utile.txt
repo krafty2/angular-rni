@@ -1,0 +1,313 @@
+<div class="clearfix t">
+    <!-- <div class="box bordure-div">
+        <p>Criteres de recherche</p>
+        <form [formGroup]="rechercheForm" (ngSubmit)="onSubmit()">
+            <div class="input-field">
+                <input type="text" id="region" formControlName="region">
+                <label for="region">Region</label><br>
+            </div>
+            <div class="input-field">
+                <input type="text" id="province" formControlName="province">
+                <label for="province">Province</label><br>
+            </div>
+            <div class="input-field">
+                <input type="text" id="localite"  formControlName="localite">
+                <label for="localite">Localite</label><br>
+            </div>
+            <div class="input-field">
+                <input type="number" id="annee" formControlName="annee" ng-maxlength="4">
+                <label for="annee">Annee</label><br>
+            </div> -->
+            <!-- [disabled]="!rechercheForm.valid" -->
+         <!--    <button class="btn waves-effect waves-light" type="submit" name="action">Rechercher</button>
+        </form>
+    </div> -->
+    <div class=" bordure-div z-depth-2" id="map"></div>
+    <ng-template #searchForm let-data>
+        <div class="searchForm z-depth-2" style="background-color: white;">
+            <p>Criteres de recherche</p>
+            <form #search="ngForm" (ngSunmit)="onSubmit(search)" novalidate>
+                <div class="input-field">
+                    <input type="text" id="region"  name="region" [(ngModel)]="region">
+                    <label for="region">Region</label><br>
+                </div>
+                <div class="input-field">
+                    <input type="text" id="province" name="province" [(ngModel)]="province">
+                    <label for="province">Province</label><br>
+                </div>
+                 <button class="btn waves-effect waves-light" (click)="onSubmit(search)" type="submit" name="action">Rechercher</button>
+            </form>
+        </div> 
+    </ng-template>
+</div>
+
+
+
+
+
+
+========================================================================================================================================================
+
+
+import { AfterViewInit, Component, TemplateRef, ViewChild } from '@angular/core';
+import { DatePipe, formatDate } from '@angular/common';
+import { FormControl, FormGroup, FormBuilder, Validators, NgForm } from '@angular/forms';
+import { LieuEtMesure } from '../lieu-et-mesure';
+import { RniService } from '../rni-service.service';
+import { Map, divIcon } from 'leaflet';
+import * as L from 'leaflet';
+
+@Component({
+  selector: 'app-map',
+  templateUrl: './map.component.html',
+  styleUrls: ['./map.component.css'],
+  providers: [DatePipe]
+})
+
+export class MapComponent implements AfterViewInit {
+  @ViewChild('searchForm', { static: true }) searchForm!: TemplateRef<any>;
+  //rechercheForm!: FormGroup;
+  lieuEtMesure: LieuEtMesure[] = [];
+  map: any; osm: any; mark: any;
+
+  region: any;
+  province:any
+
+  constructor(private rniService: RniService,private fb: FormBuilder) { }
+
+  ngAfterViewInit(): void {
+    this.rniService.dataMap().subscribe(data => {
+      this.dataM(data);
+    });
+  }
+
+  dataM(data:any){
+    this.lieuEtMesure = data;
+    //console.table(this.lieuEtMesure);
+    if (this.map != undefined || this.map != null) {
+      this.map.remove();
+    }
+
+    let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    });
+
+    let mainlayer = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    this.map = L.map('map', { layers: [mainlayer, osm] }).setView([12.396745, -1.556532], 7);
+
+    let baseMaps = {
+      "OpenStreetMap": osm,
+      "Google Street": mainlayer
+    };
+
+    L.control.layers(baseMaps).addTo(this.map);
+
+    // //creation d'un controle personnalise pour le formulaire de recher
+    // let serchControl = new L.Control({ position:'topleft' });
+    // serchControl.onAdd = function(){
+    //   let container = L.DomUtil.create('div','search-container');
+    //   container.innerHTML = '<input type="text" id="localite"  formControlName="localite">'
+    //   return container;
+    // }
+
+    // serchControl.addTo(this.map);
+
+    let serchControl = new L.Control({ position:'topleft' });
+
+    serchControl.onAdd= ()=>{
+      const container = document.createElement('div');
+      const searchForm = this.searchForm.createEmbeddedView(null);
+      container.appendChild(searchForm.rootNodes[0]);
+      return container;
+    }
+
+    serchControl.addTo(this.map);
+
+    // this.rechercheForm = this.fb.group({
+    //   region: [''],
+    //   province: [''],
+    //   localite: [''],
+    //   annee: ['', Validators.min(2021)]
+    // })
+
+    //recherche les doublons dans un liste
+    let duplicates = this.lieuEtMesure.filter((lieu,index)=>{
+      return this.lieuEtMesure.some((p,i)=>p.longitude===lieu.longitude && p.latitude===lieu.latitude && i!==index);
+    });
+
+    console.table(duplicates);
+
+    for (let lm of this.lieuEtMesure) {
+      let mark = L.marker([lm.latitude, lm.longitude]);
+      let popup = mark.bindPopup(this.popup(lm));
+      popup.addTo(this.map);
+      mark.bindTooltip(`${'EV/m : '+lm.moyenneSpatiale}`,{permanent:false}).openTooltip(); 
+    }
+
+    
+  }
+
+ /*  donneesMap() {
+    this.rniService.dataMap().subscribe(data => {
+      
+    });
+  } */
+
+  onSubmit(search:any) {
+
+    console.log(this.province)
+    console.log(search.value.region);
+    alert(`${search.value.province} test`)
+    
+    //console.warn(this.rechercheForm.value);
+    // const regionT = this.rechercheForm.value.region;
+    // const provinceT = this.rechercheForm.value.province;
+    // const localiteT = this.rechercheForm.value.localite;
+    // const annee = this.rechercheForm.value.annee;
+
+    // const regionT = this.rechercheForm.get('region')?.value;
+    // const provinceT = this.rechercheForm.get('province')?.value;
+    // const localiteT = this.rechercheForm.get('localite')?.value;
+    // const annee = this.rechercheForm.get('annee')?.value;
+
+    // let recherche = this.lieuEtMesure.filter((lieu)=> lieu.region===regionT && lieu.province===provinceT && lieu.localite===localiteT
+    // );
+    // console.log("recherche personnalise")
+    // console.table(recherche);
+    // if (regionT != null && provinceT != null && localiteT != null && annee != null)
+    //   this.rniService.rechercheAvance1(annee, regionT, provinceT, localiteT).subscribe((data: any) => {
+    //     this.dataM(data);
+    //   })
+  }
+
+  popup(lm:LieuEtMesure){
+    
+    return `
+    <div >
+      <div class="card-panel grey lighten-4">
+        <span class="black-text">
+          <strong>Site : ${lm.nomLieu}</strong>
+          <p>Region : ${lm.region}</p>
+          <p>Province : ${lm.province}</p>
+          <p>Localite : ${lm.localite}</p>
+          <p>Mesure réalise le : ${formatDate(lm.dateMesure,'dd/MM/yyyy','en-US')}</p>
+          <p class="light-blue darken-1 white-text z-depth-2 center" style="padding: 5px;" >Moyenne spatiale recupérée : ${lm.moyenneSpatiale} EV/m</p>
+        </span>
+      </div>
+    </div>
+    `
+  }
+
+  // test(){
+  //   this.rniService.dataMap().subscribe((data) => {
+  //     this.lieuEtMesure = data
+  //     if (this.map != undefined || this.map != null) {
+  //       this.map.remove();
+  //     }
+  //     //this.map = new Map('map').setView([51.5,-0.09], 7);
+
+  //     let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  //       maxZoom: 19,
+  //       attribution: '© OpenStreetMap'
+  //     });
+
+  //     let mainlayer = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+  //       maxZoom: 20,
+  //       subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  //     });
+
+  //     //
+
+  //     // mainlayer.addTo(this.map);
+
+  //     this.map = L.map('map', { layers: [mainlayer, osm] }).setView([12.396745, -1.556532], 7);
+
+  //     let baseMaps = {
+  //       "OpenStreetMap": osm,
+  //       "Google Street": mainlayer
+  //     };
+
+  //     L.control.layers(baseMaps).addTo(this.map);
+  //     var LeafIcon: any = L.Icon.extend({
+  //       options: {
+  //         iconSize: [20, 20],
+  //         text: 1,
+  //         shadowSize: [50, 64],
+  //         iconAnchor: [22, 94],
+  //         popupAnchor: [-3, -76]
+  //       }
+  //     });
+
+
+
+  //     // let img = "assets/img/icons8-marqueur-de-plan-50.png"
+
+  //     // var greenIcon = new LeafIcon({
+  //     //   iconUrl: "assets/img/icons8-marqueur-de-plan-50.png",
+  //     //   text: 2
+  //     // })
+
+           //mainlayer.addTo(this.map);
+        // let img = "assets/img/icons8-google-my-maps-48.png"
+        // let test = L.icon({
+        //   iconUrl: img,
+        //   iconSize: [20, 20],
+        //   className: 'test'
+        // })
+        // var myIcon = L.divIcon({ className: 'my-div-icon' });
+
+  //     for (let lm of this.lieuEtMesure) {
+  //       // let test = L.divIcon({
+  //       //   iconUrl: greenIcon,
+  //       //   className: 'my-icon',
+  //       //   html: `<div>
+  //       //     <img [src]="assets/img/icons8-marqueur-de-plan-50.png"/>
+  //       //     ${lm.moyenneSpatiale}
+  //       //     </div>`
+  //       // })
+  //       //let markers = L.markerClusterGroup();
+  //       let t: string = `${lm.moyenneSpatiale}`;
+  //       let mark = L.marker([lm.latitude, lm.longitude]);
+  //       let popup = mark.bindPopup(this.popup(lm));
+  //       popup.addTo(this.map);
+  //       //markers.addLayer(mark);
+  //       //this.map.addLayer(markers);
+  //       // mark.bindPopup(lm.latitude+"test",{maxWidth:300,minWidth:200}).addTo(this.map);
+  //       mark.bindTooltip(`${'EV/m : '+lm.moyenneSpatiale}`,{permanent:false}).openTooltip().addTo(this.map); 
+  //       //console.log(mark.toGeoJSON());
+  //     }
+  //   })
+  // }
+}
+
+
+=-=================================================================================================================================================
+var myForm = new L.Control({position: 'topright'});
+
+myForm.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'my-form');
+    div.innerHTML = '<form id="my-form"><input type="text" name="name" placeholder="Name"><br><input type="email" name="email" placeholder="Email"><br><button type="submit">Submit</button></form>';
+    return div;
+};
+
+myForm.addTo(this.map);
+
+let form = document.getElementById('my-form') as HTMLFormElement;
+
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    var formData = new FormData(form);
+    var name = formData.get('name');
+    var email = formData.get('email');
+    console.log('Name: ' + name);
+    console.log('Email: ' + email);
+});
+
+========================================================================================================================
+comment recuperer les donnees de notre formulaire a partir de leaflet dans notre composant angular avec ng-template

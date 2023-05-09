@@ -1,0 +1,44 @@
+<header class="navbar-fixed">
+    <nav class="navbar">
+      <div class="nav-wrapper ">
+        <a class="brand-logo logo light-blue-text text-lighten-1">
+          <img class="flotte responsive-img" src="assets/img/logo-irt.png" alt="logo" srcset="">
+          <span style="line-height: 65px;">IRT CONSULTING</span>
+        </a>
+        <a data-target="mobile-demo" class="sidenav-trigger "><i
+            class="material-icons light-blue-text text-lighten-1">menu</i></a>
+        <ul class="right hide-on-med-and-down navbar-pers">
+          <li><a class="light-blue-text text-lighten-1">Accueil</a></li>
+    
+          <li>
+            <a class="dropdown-trigger light-blue-text text-lighten-1" href="#" data-target="dropdown1">Mesures<i
+                class="material-icons right light-blue-text text-lighten-1">arrow_drop_down</i></a>
+            <ul id="dropdown1" class="dropdown-content">
+              <li>
+                <a (click)="onRouterLinkClick()"   class="light-blue-text text-lighten-1">
+                  <strong >Sites de mesures</strong>
+                  <br>
+                  <small>Affiche tout les lieux de mesures</small>
+                </a>
+              </li>
+              <li>
+                <a routerLink="map" routerLinkActive="active" class="light-blue-text text-lighten-1">
+                  <strong>Mesures</strong>
+                  <br>
+                  <small>Affiche les données de mesures sur la carte</small>
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li><a [hidden]="!admin" class="light-blue-text text-lighten-1">À propos</a></li>
+          <li><a routerLink="login" class="light-blue-text text-lighten-1">Login</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+    
+  <ul class="sidenav"  id="mobile-demo">
+    <li><a href="#">Accueil</a></li>
+    <li><a href="#">À propos</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
